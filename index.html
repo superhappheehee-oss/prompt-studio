@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Studio · 미술 용어 프롬프트 빌더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Gothic+A1:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ===== LIGHT (default) ===== */
+    /* ===== Creative-Kids 팔레트 (라임·라벤더·민트) + 검정 라인 + 흰 배경 ===== */
+    --bg:#ffffff;          /* 흰 배경 */
+    --bg-2:#f5f5f7;
+    --surface:#ffffff;
+    --surface-2:#f6f6f4;
+    --ink:#1c1c22;         /* 거의 검정 — 라인·텍스트 주역 */
+    --line:#1c1c22;        /* 굵은 구조선 */
+    --line-thin:#dcdcdc;   /* 옅은 보조선 */
+    --line-soft:#ebebeb;
+    --text:#1c1c22;
+    --text-dim:#5c5c66;
+    --text-faint:#9c9ca6;
+    --accent:#1c1c22;      /* 포인트색 제거 — UI 액센트는 블랙(라인색)으로 통일 */
+    --accent-soft:#f0f0ee;  /* 포커스/은은한 배경 = 중립 회색 */
+    --accent-ink:#1c1c22;   /* 라벨 텍스트도 블랙 */
+    --ok:#1f9e63;
+    --code-bg:#1c1c22;     /* 프롬프트 박스 = 검정 */
+    --code-text:#f3f3f0;
+    --shadow-sm:0 2px 0 rgba(28,28,34,.12);          /* 오프셋 그림자(스티커 느낌) */
+    --shadow-md:4px 5px 0 rgba(28,28,34,.13);
+    --radius:16px;
+
+    /* 카테고리별 색 — 참고 이미지에서 도출 · 채움/보더/짙은 텍스트 3종 */
+    --c1:#eef07a; --c1-line:#c7c93f; --c1-ink:#6f701a;  /* 매체 · 라임 옐로우 */
+    --c2:#cbb9f6; --c2-line:#9a82df; --c2-ink:#553cae;  /* 서양사조 · 라벤더 */
+    --c3:#a6e884; --c3-line:#6fc24a; --c3-ink:#3a7d1f;  /* 한국·동양 · 라임 그린 */
+    --c4:#9fefd3; --c4-line:#5ccea4; --c4-ink:#1f8a63;  /* 일러스트 · 민트 */
+    --c5:#ffcba0; --c5-line:#e69a5c; --c5-ink:#9a5a1f;  /* 조명 · 살구(빛) */
+    --c6:#a9d5f5; --c6-line:#5fa9e0; --c6-ink:#2166a0;  /* 카메라 · 하늘 */
+    --c7:#ffb6e6; --c7-line:#e97dc4; --c7-ink:#ab3d84;  /* 분위기·색 · 핑크 */
+    --c8:#e6e6e2; --c8-line:#b6b6ae; --c8-ink:#6c6c64;  /* 미분류 · 회색 */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Inter","Gothic A1",system-ui,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;
+    font-size:15px;
+  }
+  .wrap{max-width:1520px;margin:0 auto;padding:44px 40px 110px}
+
+  header.masthead{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:8px}
+  .brand{display:flex;flex-direction:column;gap:9px;position:relative;z-index:2}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim)}
+  .kicker .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .brand h1{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(38px,7vw,68px);line-height:.96;margin:0;letter-spacing:-.03em;color:var(--ink)}
+  .brand h1 .g{color:var(--ink);font-style:italic;font-family:"Space Grotesk",sans-serif;font-weight:500;background:linear-gradient(transparent 62%, var(--c1) 62% 92%, transparent 92%);padding:0 2px}
+  .tagline{font-size:15px;color:var(--text-dim);max-width:400px;text-align:right;position:relative;z-index:2}
+  .tagline b{color:var(--text);font-weight:600}
+
+  /* ===== 블롭(유기 방울) — 헤더·빈 공간에만 ===== */
+  .blob{position:absolute;border-radius:60% 40% 55% 45% / 55% 45% 55% 45%;z-index:0;pointer-events:none}
+  .masthead{padding-bottom:6px}
+  .masthead .blob-a{width:74px;height:60px;background:var(--c1);top:-14px;left:calc(50% - 30px);transform:rotate(-8deg);opacity:.85}
+  .masthead .blob-b{width:52px;height:52px;background:var(--c3);border-radius:52% 48% 50% 50% / 55% 50% 50% 45%;top:26px;left:calc(50% + 40px);opacity:.85}
+  .masthead .blob-c{width:44px;height:36px;background:var(--c7);top:2px;left:calc(50% + 96px);transform:rotate(12deg);opacity:.75}
+  @media(max-width:760px){.masthead .blob{display:none}}
+
+  .controls-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:28px 0 6px;padding:16px 0;border-top:2px solid var(--line);border-bottom:2px solid var(--line)}
+  .seg-label{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.16em;color:var(--text-dim);text-transform:uppercase}
+  .seg{display:inline-flex;background:var(--surface);border:2px solid var(--line);border-radius:13px;padding:4px;gap:4px}
+  .seg button{border:0;background:transparent;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;padding:9px 18px;border-radius:9px;cursor:pointer;color:var(--text-dim);transition:all .18s}
+  .seg button[aria-pressed="true"]{color:#fff;background:var(--ink)}
+
+  .searchbar{display:flex;align-items:center;gap:10px;margin:24px 0 4px}
+  .searchbar input{flex:1;border:2px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:15px 20px;font-family:inherit;font-size:15.5px;color:var(--text)}
+  .searchbar input::placeholder{color:var(--text-faint)}
+  .searchbar input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .clearall{border:2px solid var(--line);background:var(--surface);border-radius:13px;padding:14px 18px;font-family:"JetBrains Mono",monospace;font-size:12.5px;cursor:pointer;color:var(--text-dim);transition:.15s;white-space:nowrap;font-weight:500}
+  .clearall:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+
+  .layout{display:grid;grid-template-columns:1fr 440px;gap:34px;margin-top:28px;align-items:start}
+  @media(max-width:1040px){.layout{grid-template-columns:1fr}}
+
+  /* 카테고리별 색 변수 매핑 — 카드가 자기 색 톤을 물려받음 */
+  .cat[data-cat="medium"]{--cc:var(--c1);--cc-line:var(--c1-line);--cc-ink:var(--c1-ink)}
+  .cat[data-cat="west"]  {--cc:var(--c2);--cc-line:var(--c2-line);--cc-ink:var(--c2-ink)}
+  .cat[data-cat="east"]  {--cc:var(--c3);--cc-line:var(--c3-line);--cc-ink:var(--c3-ink)}
+  .cat[data-cat="illus"] {--cc:var(--c4);--cc-line:var(--c4-line);--cc-ink:var(--c4-ink)}
+  .cat[data-cat="light"] {--cc:var(--c5);--cc-line:var(--c5-line);--cc-ink:var(--c5-ink)}
+  .cat[data-cat="cam"]   {--cc:var(--c6);--cc-line:var(--c6-line);--cc-ink:var(--c6-ink)}
+  .cat[data-cat="mood"]  {--cc:var(--c7);--cc-line:var(--c7-line);--cc-ink:var(--c7-ink)}
+  .cat[data-cat="misc"]  {--cc:var(--c8);--cc-line:var(--c8-line);--cc-ink:var(--c8-ink)}
+
+  .cat{margin-bottom:18px;border:2px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-md)}
+  .cat > summary{list-style:none;cursor:pointer;padding:18px 24px;display:flex;align-items:center;gap:15px;user-select:none;background:var(--cc);border-bottom:2px solid transparent}
+  .cat[open] > summary{border-bottom-color:var(--line)}
+  .cat > summary::-webkit-details-marker{display:none}
+  .cat-num{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;color:#fff;background:var(--ink);border-radius:9px;padding:5px 10px;flex:none}
+  .cat-title{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.01em;color:var(--ink)}
+  .cat-title .ko{font-family:"Gothic A1",sans-serif;font-size:14px;color:var(--cc-ink);margin-left:10px;font-weight:600}
+  .cat-count{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--cc-ink);font-weight:500}
+  .chev{transition:transform .22s;color:var(--ink);flex:none}
+  .cat[open] .chev{transform:rotate(180deg)}
+  .cat-body{padding:4px 22px 22px}
+  .sub{margin-top:16px}
+  .sub-head{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cc-ink);margin:18px 0 12px;display:flex;align-items:center;gap:10px;font-weight:500}
+  .sub-head::after{content:"";height:2px;flex:1;background:var(--cc);border-radius:2px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  /* 안 고른 칩: 조용한 흰 배경 + 얇은 라인 (텍스트 많아도 눈 안 아프게) */
+  .chip{position:relative;border:1.5px solid var(--line-thin);background:var(--surface);color:var(--text);border-radius:12px;padding:10px 15px;font-size:14px;cursor:pointer;transition:all .13s;line-height:1.25;display:inline-flex;flex-direction:column;gap:3px;max-width:270px}
+  .chip .en{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px}
+  .chip .kr{font-size:12.5px;color:var(--text-dim)}
+  /* 호버: 그 카테고리색을 살짝만 예고 */
+  .chip:hover{border-color:var(--cc-line);background:color-mix(in srgb, var(--cc) 30%, #fff)}
+  /* 고른 칩: 카테고리 파스텔로 채움 + 굵은 라인 + 오프셋 그림자 (선택만 도드라지게) */
+  .chip[aria-pressed="true"]{background:var(--cc);border:2px solid var(--ink);color:var(--ink);box-shadow:var(--shadow-sm);padding:8.5px 12.5px}
+  .chip[aria-pressed="true"] .en{color:var(--ink)}
+  .chip[aria-pressed="true"] .kr{color:var(--cc-ink)}
+  .chip .info{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace}
+  .chip:hover .info{display:flex}
+
+  .tip{grid-column:1/-1;margin-top:14px;font-size:12.5px;color:var(--text);background:var(--cc);border:2px solid var(--ink);border-radius:12px;padding:10px 14px;display:none}
+  .tip.show{display:block}
+  .tip b{color:var(--cc-ink)}
+
+  .panel{position:sticky;top:20px;border:2px solid var(--line);border-radius:20px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-md)}
+  .panel-top{position:relative;padding:22px 22px 14px;border-bottom:2px solid var(--line);background:var(--accent-soft);overflow:hidden}
+  .panel-top .blob-p{position:absolute;width:80px;height:66px;background:var(--c4);border-radius:60% 40% 55% 45% / 55% 45% 55% 45%;top:-18px;right:-14px;opacity:.7;pointer-events:none}
+  .panel h2{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:23px;margin:0;letter-spacing:-.01em;color:var(--ink);position:relative}
+  .panel .sub2{font-size:13px;color:var(--text-dim);margin-top:3px;position:relative}
+  .subjectbox{padding:16px 22px 8px}
+  .subjectbox label{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  .subjectbox textarea{width:100%;margin-top:7px;border:2px solid var(--line-thin);border-radius:12px;background:var(--surface-2);padding:12px 14px;font-family:inherit;font-size:14.5px;resize:vertical;min-height:56px;color:var(--text)}
+  .subjectbox textarea::placeholder{color:var(--text-faint)}
+  .subjectbox textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .subjectbox .hint{font-size:12px;color:var(--text-faint);margin-top:5px}
+  .subjectbox .hint b{color:var(--accent-ink);font-weight:700}
+  .trbox{margin-top:10px;border:2px solid var(--ink);background:var(--accent-soft);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow-sm)}
+  .trbox[hidden]{display:none}
+  .trbox-lbl{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+  .trbox-lbl>span:first-child{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  .trstatus{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--text-faint)}
+  .trstatus.ok{color:var(--ok)}
+  .trstatus.err{color:#c0392b}
+  .trtext{font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:14px;color:var(--text);word-break:break-word;min-height:19px}
+  .trtext .muted{color:var(--text-dim);font-style:italic;font-weight:400;font-size:12.5px}
+
+  .outbox{margin:4px 22px 0;padding-top:10px}
+  .outbox .lbl{margin-bottom:9px}
+  .outbox .lbl span{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);font-weight:600}
+  .prompt{font-family:"JetBrains Mono",monospace;font-size:14px;line-height:2;background:var(--code-bg);color:var(--code-text);border-radius:12px;padding:16px 17px;min-height:80px;white-space:pre-wrap;word-break:break-word}
+  .prompt .ph{color:#8a8ca0}
+  /* 완성 프롬프트 안의 토큰: 카테고리 파스텔 알약(옅게) — 3번식이되 눈 안 아프게 */
+  .prompt .tok{color:var(--ink);background:#e4e4e2;padding:3px 9px;border-radius:7px;font-weight:500;white-space:nowrap}
+  .prompt .tok.subj{background:#fff;border:1.5px dashed #8a8ca0;color:var(--code-text);background:transparent}
+  .prompt .tok[data-cc="medium"]{background:var(--c1)} .prompt .tok[data-cc="west"]{background:var(--c2)}
+  .prompt .tok[data-cc="east"]{background:var(--c3)} .prompt .tok[data-cc="illus"]{background:var(--c4)}
+  .prompt .tok[data-cc="light"]{background:var(--c5)} .prompt .tok[data-cc="cam"]{background:var(--c6)}
+  .prompt .tok[data-cc="mood"]{background:var(--c7)} .prompt .tok[data-cc="misc"]{background:var(--c8)}
+  .prompt .sep{color:#7a7a8c}
+
+  .selected-list{margin:14px 22px 0;display:flex;flex-wrap:wrap;gap:8px;min-height:4px}
+  .pill{background:var(--surface-2);border:1.5px solid var(--line-thin);border-radius:9px;font-size:12px;padding:5px 7px 5px 11px;display:inline-flex;gap:6px;align-items:center;font-family:"JetBrains Mono",monospace;color:var(--text-dim)}
+  .pill b{font-weight:600;color:var(--text)}
+  .pill button{border:0;background:transparent;cursor:pointer;color:var(--accent);font-size:14px;line-height:1;padding:0}
+  /* pill도 카테고리 색으로 물들임 */
+  .pill[data-cc="medium"]{background:var(--c1);border-color:var(--c1-line)} .pill[data-cc="west"]{background:var(--c2);border-color:var(--c2-line)}
+  .pill[data-cc="east"]{background:var(--c3);border-color:var(--c3-line)} .pill[data-cc="illus"]{background:var(--c4);border-color:var(--c4-line)}
+  .pill[data-cc="light"]{background:var(--c5);border-color:var(--c5-line)} .pill[data-cc="cam"]{background:var(--c6);border-color:var(--c6-line)}
+  .pill[data-cc="mood"]{background:var(--c7);border-color:var(--c7-line)} .pill[data-cc="misc"]{background:var(--c8);border-color:var(--c8-line)}
+  .pill[data-cc] b{color:var(--ink)} .pill[data-cc] button{color:var(--ink)}
+
+  .actions{display:flex;gap:10px;padding:18px 22px 8px}
+  .btn{flex:1;border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:12px;padding:14px;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:14.5px;cursor:pointer;transition:.13s;box-shadow:var(--shadow-sm)}
+  .btn.ghost{background:var(--surface);color:var(--ink)}
+  .btn.ghost:hover{background:var(--surface-2)}
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:3px 4px 0 rgba(43,45,66,.18)}
+  .btn:active{transform:translate(0,0);box-shadow:var(--shadow-sm)}
+  .copied{color:var(--ok);font-family:"JetBrains Mono",monospace;font-size:11px;text-align:center;padding:2px 0 16px;height:16px;font-weight:600}
+
+  /* ===== tabs ===== */
+  .tabs{display:inline-flex;gap:6px}
+  .tab{border:2px solid var(--line);background:var(--surface);color:var(--text-dim);font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;padding:9px 17px;border-radius:12px;cursor:pointer;transition:.15s}
+  .tab:hover{border-color:var(--accent);color:var(--accent)}
+  .tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  @media(max-width:640px){.tabs{margin-left:0 !important;width:100%}.tab{flex:1}}
+
+  /* ===== manage page ===== */
+  #view-manage{margin-top:24px}
+  .mng-intro{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+  .mng-title{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:24px;margin:0 0 6px;letter-spacing:-.01em;color:var(--ink)}
+  .mng-desc{font-size:13px;color:var(--text-dim);max-width:520px;margin:0}
+  .mng-desc b{color:var(--text)}
+  .mng-io{display:flex;gap:8px;flex-wrap:wrap}
+  .btn.sm{flex:none;padding:9px 14px;font-size:12px}
+  .btn.ghost.sm{background:var(--surface)}
+  .btn.ghost.sm.danger{color:#b0392e;border-color:#d8a59e;background:var(--surface)}
+  .btn.ghost.sm.danger:hover{border-color:#b0392e;background:#fbeeec}
+
+  .mng-grid{display:grid;grid-template-columns:460px 1fr;gap:30px;align-items:start}
+  @media(max-width:960px){.mng-grid{grid-template-columns:1fr}}
+  .mng-form,.mng-list{border:2px solid var(--line);border-radius:18px;background:var(--surface);padding:20px;box-shadow:var(--shadow-md)}
+  .mng-h3{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:16px;margin:0 0 6px;color:var(--ink)}
+  .mng-formhint{font-size:12px;color:var(--text-dim);margin:0 0 16px;line-height:1.5}
+  .mng-formhint b{color:var(--text)}
+  .mng-lbl{display:block;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin:14px 0 6px;font-weight:600}
+  .mng-input{width:100%;border:2px solid var(--line-thin);border-radius:10px;background:var(--surface-2);padding:10px 12px;font-family:inherit;font-size:13px;color:var(--text)}
+  .mng-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  textarea.mng-input{resize:vertical;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.5}
+  .mng-onerow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .mng-form .btn.sm{width:100%;margin-top:10px}
+  .mng-or{text-align:center;font-size:11px;color:var(--text-faint);margin:18px 0 12px;position:relative}
+  .mng-or::before,.mng-or::after{content:"";position:absolute;top:50%;width:38%;height:2px;background:var(--line-soft)}
+  .mng-or::before{left:0}.mng-or::after{right:0}
+  .mng-msg{font-size:12px;margin-top:10px;min-height:16px;color:var(--ok);font-weight:600}
+  .mng-msg.err{color:#b0392e}
+
+  /* ===== 겹침 힌트 ===== */
+  .hint-box{margin-top:10px;border:2px solid var(--c1-line);background:#fbfce0;border-radius:12px;padding:10px 12px;font-size:12px}
+  .hint-box[hidden]{display:none}
+  .hint-head{font-weight:700;color:var(--c1-ink);margin-bottom:6px;font-size:12px}
+  .hint-sub{font-weight:400;color:#b89a5e;font-size:11px}
+  .hint-row{display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px dashed #e6e6b0}
+  .hint-row:first-of-type{border-top:0}
+  .hint-row b{font-family:"Space Grotesk",sans-serif;font-size:12px;color:var(--text)}
+  .hint-row span{color:var(--text-dim);font-size:11.5px}
+  .hint-row em{margin-left:auto;font-style:normal;font-family:"JetBrains Mono",monospace;font-size:10px;color:#b89a5e;white-space:nowrap}
+
+  .mng-listhead{margin-bottom:14px}
+  .mng-badge{display:inline-block;background:var(--c2);color:var(--c2-ink);font-family:"JetBrains Mono",monospace;font-size:12px;padding:2px 9px;border-radius:20px;margin-left:6px;font-weight:600;border:1.5px solid var(--c2-line)}
+  .mng-note{display:block;font-size:11.5px;color:var(--text-faint);margin-top:4px}
+  .my-list{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow-y:auto}
+  .my-empty{text-align:center;color:var(--text-faint);font-size:13px;padding:40px 0}
+  .my-item{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line-thin);border-radius:12px;padding:11px 14px;background:var(--surface-2)}
+  .my-item .en{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px}
+  .my-item .ko{font-size:12px;color:var(--text-dim)}
+  .my-item .d{font-size:11.5px;color:var(--text-faint);margin-top:2px}
+  .my-item .cat-tag{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--accent-ink);background:var(--accent-soft);padding:2px 7px;border-radius:6px;white-space:nowrap;font-weight:600}
+  .my-item .body{flex:1;min-width:0}
+  .my-item .acts{display:flex;gap:6px;flex:none}
+  .my-item .acts button{border:1.5px solid var(--line-thin);background:var(--surface);border-radius:8px;padding:5px 9px;font-size:11px;cursor:pointer;color:var(--text-dim);font-family:"JetBrains Mono",monospace}
+  .my-item .acts button:hover{border-color:var(--accent);color:var(--accent)}
+  .my-item .acts button.del:hover{border-color:#b0392e;color:#b0392e}
+
+  /* ===== edit modal ===== */
+  .modal-back{position:fixed;inset:0;background:rgba(43,45,66,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-back[hidden]{display:none}
+  .modal{background:var(--surface);border:2px solid var(--ink);border-radius:18px;padding:24px;width:100%;max-width:420px;box-shadow:8px 10px 0 rgba(43,45,66,.18)}
+  .modal-title{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:19px;margin:0 0 8px;color:var(--ink)}
+  .modal .mng-lbl{margin-top:14px}
+  .modal .mng-input{margin-top:0}
+  .modal-acts{display:flex;gap:9px;justify-content:flex-end;margin-top:22px}
+  .modal-acts .btn.sm{width:auto;padding:9px 18px}
+
+  footer{margin-top:44px;border-top:2px solid var(--line);padding-top:18px;font-size:11.5px;color:var(--text-faint);text-align:center;line-height:1.8;font-family:"JetBrains Mono",monospace}
+  footer b{color:var(--text-dim)}
+  .video-only{display:none}
+  body[data-mode="video"] .video-only{display:block}
+</style>
+</head>
+<body data-mode="image">
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="blob blob-a"></span>
+    <span class="blob blob-b"></span>
+    <span class="blob blob-c"></span>
+    <div class="brand">
+      <span class="kicker"><span class="dot"></span> Prompt Builder for Art &amp; Video</span>
+      <h1>Prompt <span class="g">Studio</span></h1>
+    </div>
+    <p class="tagline">미술 지식이 없어도 괜찮아요. 버튼을 고르면 <b>영어 프롬프트</b>가 완성되고, 각 용어의 <b>한글 뜻</b>이 함께 쌓여 자연스럽게 공부가 됩니다.</p>
+  </header>
+
+  <div class="controls-row">
+    <span class="seg-label">Make</span>
+    <div class="seg" id="modeSeg" role="group" aria-label="이미지 또는 영상">
+      <button data-mode="image" aria-pressed="true">🖼 이미지</button>
+      <button data-mode="video" aria-pressed="false">🎬 영상</button>
+    </div>
+    <div class="tabs" id="tabs" role="tablist" style="margin-left:auto">
+      <button class="tab" data-tab="build" aria-selected="true">✏️ 프롬프트 만들기</button>
+      <button class="tab" data-tab="manage" aria-selected="false">🗂 내 용어장 관리</button>
+    </div>
+  </div>
+
+  <!-- ===== 빌더 화면 ===== -->
+  <section id="view-build">
+  <div class="searchbar">
+    <input id="search" type="search" placeholder="용어 검색 — 추상, 민화, golden hour, 로우앵글, 애니메이션…" autocomplete="off">
+    <button class="clearall" id="clearAll">전체 해제</button>
+  </div>
+
+  <div class="layout">
+    <main id="cats"></main>
+    <aside>
+      <div class="panel">
+        <div class="panel-top">
+          <span class="blob-p"></span>
+          <h2>완성된 프롬프트</h2>
+          <div class="sub2">고른 용어가 이어붙습니다. 주제만 적으면 끝.</div>
+        </div>
+        <div class="subjectbox">
+          <label for="subject">① 무엇을 그릴까요 (주제·소재)</label>
+          <textarea id="subject" placeholder="예: 눈 내리는 밤의 한옥 마을 / a fox curled up asleep"></textarea>
+          <div class="hint">한글로 적으면 <b>자동으로 영어 번역</b>돼서 프롬프트에 들어가요.</div>
+          <div class="trbox" id="trbox" hidden>
+            <div class="trbox-lbl"><span>영어 번역 (프롬프트엔 이게 들어감)</span><span class="trstatus" id="trStatus"></span></div>
+            <div class="trtext" id="trText"></div>
+          </div>
+        </div>
+        <div class="outbox">
+          <div class="lbl"><span>② 완성 프롬프트</span></div>
+          <div class="prompt" id="promptOut"><span class="ph">여기에 프롬프트가 나타납니다…</span></div>
+        </div>
+        <div class="selected-list" id="selList"></div>
+        <div class="actions">
+          <button class="btn" id="copyBtn">⧉ 복사하기</button>
+          <button class="btn ghost" id="copyKoBtn">한글 설명 복사</button>
+        </div>
+        <div class="copied" id="copied"></div>
+      </div>
+    </aside>
+  </div>
+  </section>
+
+  <!-- ===== 관리 화면 ===== -->
+  <section id="view-manage" hidden>
+    <div class="mng-intro">
+      <div>
+        <h2 class="mng-title">내 용어장 관리</h2>
+        <p class="mng-desc">직접 용어를 추가·수정·삭제할 수 있어요. 변경사항은 <b>이 브라우저에 자동 저장</b>됩니다. 다른 컴퓨터로 옮기거나 백업하려면 아래 <b>내보내기</b>를 쓰세요.</p>
+      </div>
+      <div class="mng-io">
+        <button class="btn ghost sm" id="exportBtn">⬇ 내보내기(백업)</button>
+        <button class="btn ghost sm" id="importBtn">⬆ 불러오기</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+        <button class="btn ghost sm danger" id="resetBtn">↺ 내 용어 초기화</button>
+      </div>
+    </div>
+
+    <div class="mng-grid">
+      <!-- 추가 폼 -->
+      <div class="mng-form">
+        <h3 class="mng-h3">➕ 용어 추가</h3>
+        <p class="mng-formhint">채팅에서 제가 분석해준 용어를 여기 넣으면 됩니다. <b>한 줄에 하나씩, "영어 | 한글명 | 설명"</b> 형식으로 여러 개를 한꺼번에 붙여넣어도 돼요.</p>
+
+        <label class="mng-lbl">넣을 카테고리</label>
+        <select id="addCat" class="mng-input"></select>
+
+        <label class="mng-lbl">빠른 추가 — 한 줄에 하나씩 (영어 | 한글 | 설명)</label>
+        <textarea id="bulkAdd" class="mng-input" rows="4" placeholder="citypop illustration | 시티팝 | 쨍한 하늘의 80s 일본 광고풍
+airbrush illustration | 에어브러시 | 매끈하게 뭉갠 채색"></textarea>
+        <button class="btn sm" id="bulkAddBtn">여러 개 한꺼번에 추가</button>
+        <div class="hint-box" id="bulkHint" hidden></div>
+
+        <div class="mng-or">또는 하나씩</div>
+        <div class="mng-onerow">
+          <input id="oneEn" class="mng-input" placeholder="영어 토큰 (예: citypop illustration)">
+          <input id="oneKo" class="mng-input" placeholder="한글명 (예: 시티팝)">
+        </div>
+        <input id="oneD" class="mng-input" placeholder="한 줄 설명 (예: 쨍한 하늘의 80s 일본 광고풍)">
+        <div class="hint-box" id="addHint" hidden></div>
+        <button class="btn sm" id="oneAddBtn">이 용어 추가</button>
+        <div class="mng-msg" id="addMsg"></div>
+      </div>
+
+      <!-- 내 용어 목록 -->
+      <div class="mng-list">
+        <div class="mng-listhead">
+          <h3 class="mng-h3">📌 내가 추가한 용어 <span id="myCount" class="mng-badge">0</span></h3>
+          <span class="mng-note">기본 내장 용어는 여기 안 나오고 삭제할 수 없어요. 내가 추가한 것만 관리됩니다.</span>
+        </div>
+        <div id="myList" class="my-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 수정 모달 ===== -->
+  <div id="editModal" class="modal-back" hidden>
+    <div class="modal">
+      <h3 class="modal-title">용어 수정</h3>
+      <label class="mng-lbl">넣을 카테고리</label>
+      <select id="edCat" class="mng-input"></select>
+      <label class="mng-lbl">영어 토큰</label>
+      <input id="edEn" class="mng-input">
+      <div class="hint-box" id="edHint" hidden></div>
+      <label class="mng-lbl">한글명</label>
+      <input id="edKo" class="mng-input">
+      <label class="mng-lbl">설명</label>
+      <input id="edD" class="mng-input">
+      <div class="modal-acts">
+        <button class="btn ghost sm" id="edCancel">취소</button>
+        <button class="btn sm" id="edSave">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    PROMPT STUDIO · 조명 / 카메라 / 서양 미술사조 / 한국·동양 미술 / 현대 일러스트 수록<br>
+    ◉ 표시 그룹은 <b>하나만</b> 선택(스타일 충돌 방지) · 나머지는 여러 개 겹쳐 사용 가능
+  </footer>
+</div>
+
+<script>
+const DATA = [
+ {
+  id:"medium", num:"01", title:"Medium & Form", ko:"매체·형태",
+  groups:[
+   {name:"기본 매체", radio:true, items:[
+    {en:"photograph", ko:"사진", d:"실제 카메라로 찍은 듯한 사실적 이미지"},
+    {en:"oil painting", ko:"유화", d:"두껍고 질감 있는 물감, 고전 회화 느낌"},
+    {en:"watercolor", ko:"수채화", d:"맑고 번지는 투명한 물감 표현"},
+    {en:"ink wash painting", ko:"수묵화", d:"먹의 농담으로 그린 동양화 기법"},
+    {en:"gouache", ko:"과슈", d:"불투명 수채, 납작하고 선명한 색면"},
+    {en:"acrylic painting", ko:"아크릴화", d:"발색 진하고 빠르게 마르는 물감"},
+    {en:"pencil sketch", ko:"연필 스케치", d:"연필 선으로 그린 밑그림·소묘"},
+    {en:"charcoal drawing", ko:"목탄화", d:"거친 흑백 명암의 목탄 드로잉"},
+    {en:"pen and ink", ko:"펜화", d:"가는 잉크 선으로 그린 정밀 드로잉"},
+    {en:"digital painting", ko:"디지털 페인팅", d:"태블릿으로 그린 디지털 회화"},
+    {en:"3D render", ko:"3D 렌더", d:"3D 프로그램으로 만든 입체 이미지", vidonly:false},
+    {en:"vector illustration", ko:"벡터 일러스트", d:"매끈한 면·선의 그래픽 일러스트"},
+    {en:"collage", ko:"콜라주", d:"여러 재료를 오려붙인 조합 이미지"},
+    {en:"woodblock print", ko:"목판화", d:"나무에 새겨 찍어낸 판화 질감"},
+    {en:"linocut", ko:"리놀륨 판화", d:"굵고 대담한 흑백 판화 스타일"},
+    {en:"stained glass", ko:"스테인드글라스", d:"검은 윤곽선과 유리빛 색면"},
+   ]},
+   {name:"영상 매체", radio:true, vidGroup:true, items:[
+    {en:"cinematic film", ko:"시네마틱 영상", d:"영화 같은 색감·질감의 실사 영상"},
+    {en:"2D animation", ko:"2D 애니메이션", d:"손그림 느낌의 평면 애니메이션"},
+    {en:"3D animation", ko:"3D 애니메이션", d:"픽사류 입체 CG 애니메이션"},
+    {en:"stop motion", ko:"스톱모션", d:"실물을 조금씩 움직여 찍은 애니메이션"},
+    {en:"claymation", ko:"클레이 애니메이션", d:"점토 인형으로 만든 스톱모션"},
+    {en:"anime style", ko:"애니메이션(일본 애니)", d:"일본 애니 특유의 작화 스타일"},
+    {en:"motion graphics", ko:"모션 그래픽", d:"도형·타이포가 움직이는 그래픽 영상"},
+    {en:"drone footage", ko:"드론 촬영", d:"공중에서 내려다본 항공 영상"},
+    {en:"documentary footage", ko:"다큐멘터리", d:"실제 기록 같은 자연스러운 영상"},
+    {en:"vintage film grain", ko:"빈티지 필름", d:"오래된 필름의 거친 입자와 색바램"},
+   ]},
+  ]
+ },
+ {
+  id:"west", num:"02", title:"Western Art Movements", ko:"서양 미술 사조",
+  groups:[
+   {name:"고전·근대", items:[
+    {en:"Renaissance style", ko:"르네상스", d:"균형·원근·이상적 인체의 고전 회화(다빈치)"},
+    {en:"Baroque style", ko:"바로크", d:"강한 명암 대비와 극적인 연출(카라바조)"},
+    {en:"Rococo style", ko:"로코코", d:"화사하고 장식적인 파스텔 궁정 미술"},
+    {en:"Neoclassicism", ko:"신고전주의", d:"단정하고 엄숙한 고대 그리스·로마풍"},
+    {en:"Romanticism", ko:"낭만주의", d:"웅장한 자연과 감정을 강조한 회화"},
+    {en:"Realism", ko:"사실주의", d:"미화 없이 현실을 그대로 담은 화풍"},
+   ]},
+   {name:"인상주의~", items:[
+    {en:"Impressionism", ko:"인상주의", d:"빛과 순간을 짧은 붓터치로(모네)"},
+    {en:"Post-Impressionism", ko:"후기 인상주의", d:"강한 색·형태의 주관적 표현(반 고흐)"},
+    {en:"Pointillism", ko:"점묘법", d:"작은 색점을 찍어 형태를 만드는 기법(쇠라)"},
+    {en:"Fauvism", ko:"야수파", d:"강렬하고 대담한 원색의 화풍(마티스)"},
+    {en:"Art Nouveau", ko:"아르누보", d:"곡선과 식물 문양의 우아한 장식(무하)"},
+   ]},
+   {name:"현대·추상", items:[
+    {en:"Cubism", ko:"입체주의", d:"대상을 여러 각도로 쪼개 재구성(피카소)"},
+    {en:"Expressionism", ko:"표현주의", d:"내면의 감정을 왜곡·과장해 표현(뭉크)"},
+    {en:"Surrealism", ko:"초현실주의", d:"꿈·무의식의 비현실적 장면(달리)"},
+    {en:"Abstract art", ko:"추상화", d:"구체적 형태 없이 색·선·면으로 표현"},
+    {en:"Abstract Expressionism", ko:"추상표현주의", d:"큰 화면에 즉흥적·격정적 붓질(폴록)"},
+    {en:"Bauhaus style", ko:"바우하우스", d:"기하학·기능성 중심의 모던 디자인"},
+    {en:"Art Deco", ko:"아르데코", d:"직선·대칭·금속광의 화려한 1920s 양식"},
+    {en:"Pop Art", ko:"팝아트", d:"대중문화·광고를 밝은 원색으로(워홀)"},
+    {en:"Minimalism", ko:"미니멀리즘", d:"극도로 절제된 단순한 형태와 여백"},
+    {en:"Op Art", ko:"옵아트", d:"착시를 이용한 기하학적 패턴 미술"},
+   ]},
+  ]
+ },
+ {
+  id:"east", num:"03", title:"Korean & East-Asian Art", ko:"한국·동양 미술",
+  groups:[
+   {name:"한국 전통", items:[
+    {en:"Korean minhwa folk painting", ko:"민화", d:"소박하고 상징적인 한국 민속 그림(까치호랑이 등)"},
+    {en:"Korean folk painting, tiger and magpie", ko:"까치호랑이", d:"복을 부르는 대표적 민화 소재"},
+    {en:"Joseon dynasty ink landscape", ko:"진경산수화", d:"실제 우리 산천을 그린 조선 산수화(겸재)"},
+    {en:"Korean genre painting", ko:"풍속화", d:"서민의 일상을 담은 조선 그림(김홍도·신윤복)"},
+    {en:"minhwa chaekgeori", ko:"책거리", d:"책과 문방구를 쌓아 그린 정물풍 민화"},
+    {en:"munjado, ideograph painting", ko:"문자도", d:"글자를 그림처럼 꾸민 민화"},
+    {en:"dancheong pattern", ko:"단청", d:"한옥·기둥에 칠한 청·홍·녹의 전통 채색 문양"},
+    {en:"Korean celadon aesthetic", ko:"고려청자 미감", d:"은은한 비취색과 유려한 곡선의 정서"},
+    {en:"Buddhist temple mural", ko:"불화·탱화", d:"사찰의 종교적 채색 벽화"},
+    {en:"Korean four gracious plants ink", ko:"사군자", d:"매·란·국·죽을 친 문인화 소재"},
+   ]},
+   {name:"일본·중국", items:[
+    {en:"Ukiyo-e woodblock print", ko:"우키요에", d:"에도 시대 일본 목판화(호쿠사이 파도)"},
+    {en:"sumi-e ink painting", ko:"스미에(일본 수묵)", d:"먹 한 색으로 여백을 살린 일본화"},
+    {en:"Chinese gongbi fine brushwork", ko:"공필화", d:"가늘고 정교한 선의 중국 채색화"},
+    {en:"Chinese shan shui landscape", ko:"산수화(중국)", d:"안개 낀 산·물의 이상적 자연 풍경"},
+    {en:"Japanese nihonga", ko:"니혼가", d:"전통 안료로 그린 근대 일본화"},
+   ]},
+  ]
+ },
+ {
+  id:"illus", num:"04", title:"Modern Illustration & Digital", ko:"현대 일러스트·디지털아트",
+  groups:[
+   {name:"일러스트 스타일", items:[
+    {en:"flat illustration", ko:"플랫 일러스트", d:"그림자 적은 납작하고 깔끔한 스타일"},
+    {en:"line art", ko:"라인아트", d:"선만으로 그린 미니멀한 일러스트"},
+    {en:"kawaii chibi style", ko:"카와이/치비", d:"머리 크고 귀여운 캐릭터 스타일"},
+    {en:"children's book illustration", ko:"동화 삽화", d:"따뜻하고 이야기가 있는 그림책 그림"},
+    {en:"storybook watercolor", ko:"그림책 수채", d:"부드러운 수채 질감의 동화풍"},
+    {en:"editorial illustration", ko:"에디토리얼", d:"잡지·기사용 개념적 일러스트"},
+    {en:"isometric illustration", ko:"아이소메트릭", d:"비스듬한 등각 투영의 입체 도식"},
+    {en:"retro 1950s illustration", ko:"레트로(50s)", d:"복고풍 인쇄 질감과 색감"},
+    {en:"risograph print", ko:"리소그래프", d:"약간 어긋난 인쇄·형광색의 감성"},
+    {en:"sticker style, bold outline", ko:"스티커풍", d:"두꺼운 윤곽선의 스티커 같은 그림"},
+   ]},
+   {name:"게임·SF·판타지", items:[
+    {en:"concept art", ko:"컨셉 아트", d:"게임·영화용 세계관 설정 그림"},
+    {en:"cyberpunk", ko:"사이버펑크", d:"네온·비 오는 미래도시의 어두운 미감"},
+    {en:"synthwave, retrowave", ko:"신스웨이브", d:"보라·핑크 네온의 80s 미래 감성"},
+    {en:"steampunk", ko:"스팀펑크", d:"증기기관·톱니바퀴의 복고 SF"},
+    {en:"vaporwave", ko:"베이퍼웨이브", d:"파스텔·조각상의 몽환적 인터넷 미학"},
+    {en:"dark fantasy", ko:"다크 판타지", d:"음침하고 장엄한 판타지 분위기"},
+    {en:"pixel art", ko:"픽셀 아트", d:"도트로 찍은 레트로 게임 그래픽"},
+    {en:"low poly", ko:"로우폴리", d:"각진 저해상 3D 도형 스타일"},
+    {en:"cel shaded", ko:"셀셰이딩", d:"만화 같은 경계가 뚜렷한 3D 음영"},
+   ]},
+   {name:"레트로·시티팝 ✦ 고양이 그림 계열", items:[
+    {en:"citypop illustration, Hiroshi Nagai style", ko:"시티팝 일러스트", d:"쨍한 하늘·리조트 무드의 80s 일본 광고풍(나가이 히로시)"},
+    {en:"airbrush illustration", ko:"에어브러시 일러스트", d:"경계 없이 부드럽게 뭉갠 매끈한 채색"},
+    {en:"Showa era retro illustration", ko:"쇼와 레트로", d:"옛 일본 감성의 복고 하이컬러 일러스트"},
+    {en:"flat color, limited palette", ko:"제한 색면", d:"소수의 색만 쓴 절제된 플랫 컬러"},
+    {en:"clear blue sky, high saturation", ko:"쨍한 파란 하늘", d:"채도 높은 청량한 하늘색 배경"},
+    {en:"screen print texture, subtle grain", ko:"실크스크린 질감", d:"은은한 인쇄 점묘 질감이 얹힌 표면"},
+    {en:"soft gradient shading", ko:"부드러운 그라데이션 음영", d:"단계 없이 매끄럽게 번지는 명암"},
+    {en:"minimalist poster illustration", ko:"미니멀 포스터풍", d:"여백 넓고 단순한 광고 포스터 구성"},
+   ]},
+  ]
+ },
+ {
+  id:"light", num:"05", title:"Lighting", ko:"조명",
+  groups:[
+   {name:"자연광", radio:true, items:[
+    {en:"golden hour lighting", ko:"골든아워", d:"해질녘 황금빛 따뜻한 빛"},
+    {en:"blue hour", ko:"블루아워", d:"해진 직후 푸른빛 어스름"},
+    {en:"soft diffused daylight", ko:"부드러운 자연광", d:"흐린 날처럼 그림자 옅은 빛"},
+    {en:"harsh midday sun", ko:"한낮 강한 햇빛", d:"그림자 진한 쨍한 대낮 빛"},
+    {en:"overcast light", ko:"흐린 날 빛", d:"균일하고 차분한 회색 톤"},
+    {en:"moonlight", ko:"달빛", d:"차갑고 푸른 밤의 은은한 빛"},
+   ]},
+   {name:"인공·연출", radio:false, items:[
+    {en:"backlighting", ko:"역광", d:"뒤에서 비춰 실루엣이 살아남"},
+    {en:"rim light", ko:"림 라이트", d:"윤곽선을 따라 빛나는 테두리 빛"},
+    {en:"chiaroscuro", ko:"키아로스쿠로", d:"강한 명암 대비의 극적 조명"},
+    {en:"volumetric lighting", ko:"볼류메트릭", d:"빛줄기가 공기 중에 보이는 효과"},
+    {en:"neon lighting", ko:"네온 조명", d:"화려한 네온 색광"},
+    {en:"candlelight", ko:"촛불", d:"따뜻하고 흔들리는 약한 빛"},
+    {en:"studio softbox lighting", ko:"스튜디오 조명", d:"고르게 퍼지는 촬영용 인공광"},
+    {en:"dramatic spotlight", ko:"스포트라이트", d:"한 곳만 강하게 비추는 무대 조명"},
+    {en:"bioluminescent glow", ko:"생체발광", d:"스스로 빛나는 몽환적 발광"},
+   ]},
+  ]
+ },
+ {
+  id:"cam", num:"06", title:"Camera & Composition", ko:"카메라·구도",
+  groups:[
+   {name:"샷 크기", radio:true, items:[
+    {en:"extreme close-up", ko:"익스트림 클로즈업", d:"눈·손 등 아주 가까이 확대"},
+    {en:"close-up shot", ko:"클로즈업", d:"얼굴·대상 가까이"},
+    {en:"medium shot", ko:"미디엄 샷", d:"상반신 정도의 거리"},
+    {en:"full body shot", ko:"전신 샷", d:"인물 전체가 다 보이는 거리"},
+    {en:"wide establishing shot", ko:"와이드 샷", d:"배경·공간 전체를 넓게"},
+    {en:"aerial view", ko:"항공뷰", d:"하늘에서 내려다본 시점"},
+   ]},
+   {name:"앵글", radio:true, items:[
+    {en:"eye level", ko:"아이레벨", d:"눈높이의 자연스러운 시점"},
+    {en:"low angle", ko:"로우앵글", d:"아래서 위로 올려다봐 웅장함"},
+    {en:"high angle", ko:"하이앵글", d:"위에서 내려다봐 작아 보임"},
+    {en:"top-down flat lay", ko:"탑다운(플랫레이)", d:"바로 위에서 수직으로 내려다봄"},
+    {en:"dutch angle", ko:"더치앵글", d:"기울여 불안·긴장감을 줌"},
+    {en:"over-the-shoulder", ko:"오버숄더", d:"어깨 너머로 바라보는 시점"},
+   ]},
+   {name:"렌즈·구도", radio:false, items:[
+    {en:"shallow depth of field, bokeh", ko:"얕은 심도(보케)", d:"배경이 흐릿하게 뭉개짐"},
+    {en:"wide-angle lens", ko:"광각", d:"넓게 담기고 원근 과장됨"},
+    {en:"telephoto lens", ko:"망원", d:"멀리 있는 걸 당겨 압축된 원근"},
+    {en:"macro shot", ko:"매크로", d:"아주 작은 것을 극도로 확대"},
+    {en:"symmetrical composition", ko:"대칭 구도", d:"좌우가 균형 잡힌 안정적 배치"},
+    {en:"rule of thirds", ko:"삼분할 구도", d:"화면을 3등분해 주제를 배치"},
+    {en:"leading lines", ko:"유도선", d:"선을 따라 시선을 이끄는 구도"},
+    {en:"negative space", ko:"여백(네거티브 스페이스)", d:"빈 공간을 크게 살린 구성"},
+   ]},
+   {name:"카메라 움직임", radio:false, vidGroup:true, items:[
+    {en:"slow dolly in", ko:"돌리 인", d:"천천히 대상으로 다가가는 이동"},
+    {en:"tracking shot", ko:"트래킹 샷", d:"움직이는 대상을 따라가는 촬영"},
+    {en:"pan shot", ko:"패닝", d:"좌우로 훑는 카메라 회전"},
+    {en:"crane shot", ko:"크레인 샷", d:"위아래로 크게 이동하는 촬영"},
+    {en:"orbit around subject", ko:"오빗(회전)", d:"대상 주위를 빙 도는 카메라"},
+    {en:"handheld shaky cam", ko:"핸드헬드", d:"손으로 든 듯 흔들리는 생동감"},
+    {en:"slow motion", ko:"슬로우 모션", d:"느리게 재생되는 극적 장면"},
+    {en:"time-lapse", ko:"타임랩스", d:"긴 시간을 빠르게 압축한 영상"},
+   ]},
+  ]
+ },
+ {
+  id:"mood", num:"07", title:"Mood · Color · Detail", ko:"분위기·색·디테일",
+  groups:[
+   {name:"분위기", radio:false, items:[
+    {en:"serene and peaceful", ko:"고요·평화로움", d:"차분하고 잔잔한 정서"},
+    {en:"dreamy ethereal", ko:"몽환적", d:"안개처럼 흐릿하고 환상적"},
+    {en:"melancholic", ko:"쓸쓸함", d:"차분한 슬픔·향수의 정서"},
+    {en:"epic and grand", ko:"장엄·웅장", d:"스케일 크고 압도적인 느낌"},
+    {en:"cozy warm", ko:"아늑함", d:"포근하고 따뜻한 분위기"},
+    {en:"eerie mysterious", ko:"기묘·신비", d:"묘하고 오싹한 미스터리 톤"},
+    {en:"whimsical playful", ko:"발랄·엉뚱", d:"장난스럽고 상상력 넘치는"},
+    {en:"nostalgic", ko:"향수·추억", d:"옛날을 떠올리게 하는 정감"},
+   ]},
+   {name:"색감", radio:true, items:[
+    {en:"warm color palette", ko:"따뜻한 색조", d:"빨강·주황·노랑 위주"},
+    {en:"cool color palette", ko:"차가운 색조", d:"파랑·청록·보라 위주"},
+    {en:"pastel colors", ko:"파스텔", d:"연하고 부드러운 색"},
+    {en:"muted earth tones", ko:"흙빛 뮤트톤", d:"채도 낮은 자연스러운 색"},
+    {en:"vibrant saturated colors", ko:"쨍한 원색", d:"선명하고 강한 채도"},
+    {en:"monochromatic", ko:"모노톤", d:"한 색 계열로 통일"},
+    {en:"black and white", ko:"흑백", d:"무채색 명암만으로 표현"},
+    {en:"duotone", ko:"듀오톤", d:"두 색만 쓰는 감각적 배색"},
+   ]},
+   {name:"디테일·마감", radio:false, items:[
+    {en:"highly detailed, intricate", ko:"초정밀 디테일", d:"세밀하게 그려 넣은 정교함"},
+    {en:"ultra realistic, 8k", ko:"극사실 8K", d:"사진처럼 선명하고 고해상"},
+    {en:"soft focus", ko:"소프트 포커스", d:"전체적으로 부드럽게 흐림"},
+    {en:"grainy texture", ko:"거친 입자", d:"필름 같은 알갱이 질감"},
+    {en:"clean minimal", ko:"깔끔·미니멀", d:"군더더기 없는 정돈된 마감"},
+    {en:"textured brushstrokes", ko:"붓터치 질감", d:"물감의 결이 살아있는 표면"},
+    {en:"glossy 3D render", ko:"광택 3D", d:"매끈하고 반짝이는 입체 마감"},
+   ]},
+  ]
+ },
+ {
+  id:"misc", num:"08", title:"Uncategorized", ko:"미분류 · 나중에 정리",
+  groups:[
+   {name:"임시 보관 — 헷갈리면 일단 여기", items:[
+   ]},
+  ]
+ },
+];
+
+/* ===== 사용자 용어(localStorage) =====
+   저장 형태: [{catId, en, ko, d, id}]  — 내가 추가한 것만 */
+const LS_KEY = "promptStudio.myTerms.v1";
+let MY = [];
+function loadMy(){
+  try{ MY = JSON.parse(localStorage.getItem(LS_KEY)||"[]"); if(!Array.isArray(MY)) MY=[]; }
+  catch{ MY=[]; }
+}
+function saveMy(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(MY)); }catch(e){}
+}
+/* 내가 추가한 용어를 DATA에 "★ 내가 추가" 그룹으로 합쳐서 화면용 데이터 생성 */
+function mergedData(){
+  // 깊은 복사(기본 구조 유지)
+  const copy = DATA.map(cat=>({...cat, groups: cat.groups.map(g=>({...g, items:[...g.items]}))}));
+  const byCat = {};
+  MY.forEach(t=>{ (byCat[t.catId]=byCat[t.catId]||[]).push(t); });
+  copy.forEach(cat=>{
+    if(byCat[cat.id] && byCat[cat.id].length){
+      cat.groups.push({ name:"★ 내가 추가", mine:true, items: byCat[cat.id].map(t=>({en:t.en,ko:t.ko,d:t.d,mine:true,uid:t.id})) });
+    }
+  });
+  return copy;
+}
+let VIEWDATA = DATA; // renderCats가 사용할 실제 데이터(초기화 시 교체)
+
+/* ===== state ===== */
+const state = { selected: new Map(), mode:"image", lang:"en" };
+
+/* ===== helpers ===== */
+function key(catId,en){return catId+"::"+en;}
+function isVideoItem(item){ return true; }
+
+/* ===== render categories ===== */
+const catsEl = document.getElementById("cats");
+function buildChip(cat, group, item){
+  const btn = document.createElement("button");
+  btn.className="chip";
+  btn.type="button";
+  btn.setAttribute("aria-pressed","false");
+  btn.dataset.k = key(cat.id,item.en);
+  btn.dataset.en = item.en;
+  btn.dataset.ko = item.ko;
+  btn.dataset.cat = cat.id;
+  btn.dataset.group = group.name;
+  btn.dataset.radio = group.radio ? "1":"0";
+  btn.dataset.search = (item.en+" "+item.ko+" "+item.d).toLowerCase();
+  if(group.vidGroup) btn.dataset.vidgroup="1";
+  btn.innerHTML = `<span class="en">${item.en}</span><span class="kr">${item.ko}</span><span class="info" title="${item.d}">?</span>`;
+  btn.title = item.ko+" — "+item.d;
+  btn.addEventListener("click", ()=>toggleChip(btn, cat, group, item));
+  btn.addEventListener("mouseenter", ()=>showTip(cat.id, item));
+  return btn;
+}
+function renderCats(){
+  catsEl.innerHTML="";
+  VIEWDATA.forEach((cat,i)=>{
+    const det=document.createElement("details");
+    det.className="cat";
+    if(i<2) det.open=true;
+    det.dataset.cat=cat.id;
+    let count=0;
+    const body=document.createElement("div");
+    body.className="cat-body";
+    cat.groups.forEach(group=>{
+      if(!group.items.length) return; // 빈 그룹은 표시하지 않음
+      // 영상 전용 그룹은 image 모드에서 숨김
+      const sub=document.createElement("div");
+      sub.className="sub";
+      if(group.vidGroup) sub.dataset.vidgroup="1";
+      const head=document.createElement("div");
+      head.className="sub-head";
+      head.textContent = group.name + (group.radio? "  ◉ 하나만":"");
+      sub.appendChild(head);
+      const chips=document.createElement("div");
+      chips.className="chips";
+      group.items.forEach(item=>{ chips.appendChild(buildChip(cat,group,item)); count++; });
+      sub.appendChild(chips);
+      body.appendChild(sub);
+    });
+    if(count===0) return; // 용어가 하나도 없는 카테고리(예: 빈 미분류)는 숨김
+    const tip=document.createElement("div");
+    tip.className="tip"; tip.id="tip-"+cat.id;
+    body.appendChild(tip);
+
+    const sum=document.createElement("summary");
+    sum.innerHTML=`<span class="cat-num">${cat.num}</span>
+      <span class="cat-title">${cat.title}<span class="ko">${cat.ko}</span></span>
+      <span class="cat-count">${count} terms</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>`;
+    det.appendChild(sum);
+    det.appendChild(body);
+    catsEl.appendChild(det);
+  });
+  applyModeVisibility();
+}
+
+/* ===== tip ===== */
+function showTip(catId,item){
+  const t=document.getElementById("tip-"+catId);
+  if(!t) return;
+  t.innerHTML = `<b>${item.ko}</b> (${item.en}) — ${item.d}`;
+  t.classList.add("show");
+}
+
+/* ===== toggle ===== */
+function toggleChip(btn, cat, group, item){
+  const k=btn.dataset.k;
+  const on = btn.getAttribute("aria-pressed")==="true";
+  if(group.radio && !on){
+    // 같은 그룹 라디오 해제
+    document.querySelectorAll(`.chip[data-cat="${cat.id}"][data-group="${CSS.escape(group.name)}"][data-radio="1"]`).forEach(c=>{
+      c.setAttribute("aria-pressed","false");
+      state.selected.delete(c.dataset.k);
+    });
+  }
+  if(on){ btn.setAttribute("aria-pressed","false"); state.selected.delete(k); }
+  else { btn.setAttribute("aria-pressed","true"); state.selected.set(k,{en:item.en,ko:item.ko,d:item.d,cat:cat.title,catId:cat.id}); }
+  render();
+}
+
+/* ===== output ===== */
+const subjectEl=document.getElementById("subject");
+const promptOut=document.getElementById("promptOut");
+const selList=document.getElementById("selList");
+const trbox=document.getElementById("trbox");
+const trText=document.getElementById("trText");
+const trStatus=document.getElementById("trStatus");
+
+/* ===== 주제 번역 =====
+   한글이 섞여 있으면 자동으로 영어로 번역해서 프롬프트에 넣는다.
+   무료(비공식) Google 번역 엔드포인트 사용. 실패 시 원문 유지 + 안내.
+   tr = { src, en, state:"idle|loading|ok|err" }  */
+const tr = { src:"", en:"", state:"idle" };
+function hasKorean(s){ return /[\u3131-\uD79D]/.test(s); }
+
+/* 번역된 주제(있으면 그걸, 없으면 원문) — 프롬프트에 실제 들어가는 값 */
+function effectiveSubject(){
+  const raw = subjectEl.value.trim();
+  if(!raw) return "";
+  if(!hasKorean(raw)) return raw;                 // 영어면 그대로
+  if(tr.state==="ok" && tr.src===raw && tr.en) return tr.en; // 번역 성공분
+  return raw;                                     // 아직/실패면 원문
+}
+
+async function translateSubject(raw){
+  const url = "https://translate.googleapis.com/translate_a/single"
+    + "?client=gtx&sl=ko&tl=en&dt=t&q=" + encodeURIComponent(raw);
+  const res = await fetch(url);
+  if(!res.ok) throw new Error("net");
+  const data = await res.json();
+  const out = (data[0]||[]).map(seg=>seg[0]).join("");
+  if(!out.trim()) throw new Error("empty");
+  return out.trim();
+}
+
+let trTimer=null;
+function scheduleTranslate(){
+  const raw = subjectEl.value.trim();
+  if(!raw || !hasKorean(raw)){
+    tr.src=raw; tr.en=""; tr.state="idle";
+    trbox.hidden = true;
+    if(trTimer){ clearTimeout(trTimer); trTimer=null; }
+    render();
+    return;
+  }
+  trbox.hidden = false;
+  if(tr.state==="ok" && tr.src===raw){ paintTr(); return; }
+  tr.state="loading"; tr.src=raw; paintTr();
+  if(trTimer) clearTimeout(trTimer);
+  trTimer = setTimeout(async ()=>{
+    const target = raw;
+    try{
+      const en = await translateSubject(target);
+      if(subjectEl.value.trim()!==target) return; // 그새 입력이 바뀌면 폐기
+      tr.src=target; tr.en=en; tr.state="ok";
+    }catch(e){
+      if(subjectEl.value.trim()!==target) return;
+      tr.src=target; tr.en=""; tr.state="err";
+    }
+    paintTr(); render();
+  }, 650);
+}
+
+function paintTr(){
+  if(trbox.hidden) return;
+  if(tr.state==="loading"){
+    trStatus.textContent="번역 중…"; trStatus.className="trstatus";
+    trText.innerHTML='<span class="muted">잠시만요…</span>';
+  } else if(tr.state==="ok"){
+    trStatus.textContent="✓ 번역됨"; trStatus.className="trstatus ok";
+    trText.textContent=tr.en;
+  } else if(tr.state==="err"){
+    trStatus.textContent="⚠ 번역 실패"; trStatus.className="trstatus err";
+    trText.innerHTML='<span class="muted">번역 서버에 연결하지 못했어요. 이 파일을 다운로드해 본인 브라우저에서 열면 대체로 작동해요. (지금은 한글 원문이 그대로 들어갑니다)</span>';
+  }
+}
+
+function orderedTokens(){
+  // 화면 순서대로 정렬
+  const arr=[];
+  VIEWDATA.forEach(cat=>cat.groups.forEach(g=>g.items.forEach(it=>{
+    const k=key(cat.id,it.en);
+    if(state.selected.has(k)) arr.push(state.selected.get(k));
+  })));
+  return arr;
+}
+function render(){
+  const subject = effectiveSubject();
+  const toks = orderedTokens();
+  // prompt line
+  let html="";
+  if(!subject && toks.length===0){
+    html='<span class="ph">주제를 적고 용어를 골라보세요…</span>';
+  } else {
+    const parts=[];
+    if(subject) parts.push(`<span class="tok subj">${escapeHtml(subject)}</span>`);
+    toks.forEach(t=>parts.push(`<span class="tok" data-cc="${t.catId||''}">${t.en}</span>`));
+    html = parts.join('<span class="sep"> · </span>');
+  }
+  promptOut.innerHTML = html;
+
+  // selected pills
+  selList.innerHTML="";
+  toks.forEach(t=>{
+    const p=document.createElement("span");
+    p.className="pill";
+    if(t.catId) p.dataset.cc=t.catId;
+    p.innerHTML=`<b>${t.ko}</b><button title="빼기">×</button>`;
+    p.querySelector("button").addEventListener("click",()=>{
+      // find chip
+      const chip=[...document.querySelectorAll(".chip")].find(c=>c.dataset.ko===t.ko && c.getAttribute("aria-pressed")==="true");
+      if(chip){ chip.setAttribute("aria-pressed","false"); }
+      // remove from map
+      for(const [k,v] of state.selected){ if(v.ko===t.ko){ state.selected.delete(k); break; } }
+      render();
+    });
+    selList.appendChild(p);
+  });
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function plainPrompt(){
+  const subject=effectiveSubject();
+  const toks=orderedTokens().map(t=>t.en);
+  return [subject,...toks].filter(Boolean).join(", ");
+}
+function koExplain(){
+  const rawSubject=subjectEl.value.trim();
+  const enSubject=effectiveSubject();
+  const toks=orderedTokens();
+  let out="■ 프롬프트\n"+plainPrompt()+"\n\n■ 고른 용어 뜻\n";
+  if(rawSubject){
+    out+="· (주제) "+rawSubject;
+    if(hasKorean(rawSubject) && enSubject && enSubject!==rawSubject) out+=" → "+enSubject;
+    out+="\n";
+  }
+  toks.forEach(t=>out+=`· ${t.ko} (${t.en}) — ${t.d}\n`);
+  return out;
+}
+
+/* ===== mode / lang ===== */
+function applyModeVisibility(){
+  document.body.dataset.mode=state.mode;
+  // 영상 전용 서브그룹 표시/숨김
+  document.querySelectorAll('[data-vidgroup="1"]').forEach(el=>{
+    el.style.display = state.mode==="video" ? "" : "none";
+  });
+}
+document.getElementById("modeSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  state.mode=b.dataset.mode;
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  applyModeVisibility();
+});
+/* ===== search ===== */
+document.getElementById("search").addEventListener("input",e=>{
+  const q=e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".cat").forEach(cat=>{
+    let anyVisible=false;
+    cat.querySelectorAll(".chip").forEach(chip=>{
+      const hit = !q || chip.dataset.search.includes(q);
+      chip.style.display = hit ? "" : "none";
+      if(hit) anyVisible=true;
+    });
+    // 서브그룹 헤더 숨김 처리
+    cat.querySelectorAll(".sub").forEach(sub=>{
+      if(sub.dataset.vidgroup==="1" && state.mode!=="video"){ sub.style.display="none"; return; }
+      const vis=[...sub.querySelectorAll(".chip")].some(c=>c.style.display!=="none");
+      sub.style.display = vis? "":"none";
+    });
+    if(q){ cat.open=anyVisible; }
+  });
+});
+
+/* ===== copy ===== */
+function flash(msg){ const c=document.getElementById("copied"); c.textContent=msg; setTimeout(()=>c.textContent="",1800); }
+document.getElementById("copyBtn").addEventListener("click",async()=>{
+  const txt=plainPrompt();
+  if(!txt){ flash("먼저 주제나 용어를 골라주세요"); return; }
+  try{ await navigator.clipboard.writeText(txt); flash("✓ 프롬프트가 복사되었습니다"); }
+  catch{ fallbackCopy(txt); flash("✓ 복사됨"); }
+});
+document.getElementById("copyKoBtn").addEventListener("click",async()=>{
+  const txt=koExplain();
+  try{ await navigator.clipboard.writeText(txt); flash("✓ 한글 설명까지 복사되었습니다"); }
+  catch{ fallbackCopy(txt); flash("✓ 복사됨"); }
+});
+function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}ta.remove();}
+
+document.getElementById("clearAll").addEventListener("click",()=>{
+  state.selected.clear();
+  document.querySelectorAll('.chip[aria-pressed="true"]').forEach(c=>c.setAttribute("aria-pressed","false"));
+  render();
+});
+
+subjectEl.addEventListener("input",()=>{ scheduleTranslate(); render(); });
+
+/* ============================================================
+   탭 전환
+   ============================================================ */
+const viewBuild=document.getElementById("view-build");
+const viewManage=document.getElementById("view-manage");
+document.getElementById("tabs").addEventListener("click",e=>{
+  const b=e.target.closest(".tab"); if(!b) return;
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected", t===b));
+  const tab=b.dataset.tab;
+  viewBuild.hidden = tab!=="build";
+  viewManage.hidden = tab!=="manage";
+  if(tab==="manage") renderManage();
+});
+
+/* ============================================================
+   관리페이지 로직
+   ============================================================ */
+const addCatSel=document.getElementById("addCat");
+const bulkAdd=document.getElementById("bulkAdd");
+const oneEn=document.getElementById("oneEn"), oneKo=document.getElementById("oneKo"), oneD=document.getElementById("oneD");
+const addMsg=document.getElementById("addMsg");
+const addHint=document.getElementById("addHint");
+oneEn.addEventListener("input",()=>renderHint(addHint, oneEn.value));
+const myListEl=document.getElementById("myList");
+const myCountEl=document.getElementById("myCount");
+
+function fillCatSelect(){
+  addCatSel.innerHTML = DATA.map(c=>`<option value="${c.id}">${c.num}. ${c.title} · ${c.ko}</option>`).join("");
+}
+function newId(){ return "u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function msg(t,isErr){ addMsg.textContent=t; addMsg.className="mng-msg"+(isErr?" err":""); setTimeout(()=>{addMsg.textContent="";},2600); }
+
+function rebuild(){ VIEWDATA = mergedData(); renderCats(); render(); }
+
+/* ===== 겹침 힌트 =====
+   막지는 않고, 비슷한 기존 용어를 찾아 알려줌.
+   기준: 영어 첫 단어가 같거나, 한쪽이 다른 쪽에 포함되면 후보로 봄 */
+function firstWord(s){ return (s||"").toLowerCase().trim().split(/[\s,]+/)[0]||""; }
+// 흔해서 겹침 근거로 삼으면 안 되는 꼬리표들
+const COMMON_WORDS = new Set(["art","style","illustration","painting","design","color","colors","photo","shot","light","lighting","render","print","drawing"]);
+function allTerms(){
+  const out=[];
+  DATA.forEach(c=>c.groups.forEach(g=>g.items.forEach(it=>out.push({en:it.en,ko:it.ko,catId:c.id,catKo:c.ko,mine:false}))));
+  MY.forEach(t=>{ const c=DATA.find(x=>x.id===t.catId); out.push({en:t.en,ko:t.ko,catId:t.catId,catKo:c?c.ko:t.catId,mine:true}); });
+  return out;
+}
+function findSimilar(en){
+  en=(en||"").trim(); if(en.length<3) return [];
+  const low=en.toLowerCase(), fw=firstWord(en);
+  const meaningfulFirst = fw.length>=4 && !COMMON_WORDS.has(fw);
+  // 의미있는 단어 집합(흔한말·짧은말 제외)
+  const wordsOf = s => new Set(s.toLowerCase().split(/[\s,]+/).filter(w=>w.length>=4 && !COMMON_WORDS.has(w)));
+  const myWords = wordsOf(en);
+  const hits=[];
+  allTerms().forEach(t=>{
+    const tl=t.en.toLowerCase();
+    if(tl===low) return; // 완전 동일은 중복 체크가 따로 처리
+    // ① 첫 단어가 같고 의미있는 고유어
+    const sameFirst = meaningfulFirst && firstWord(t.en)===fw;
+    // ② 의미있는 단어를 공유(단어 경계 기준 — 우연한 substring 배제)
+    const tWords = wordsOf(t.en);
+    let shareMeaningful=false;
+    myWords.forEach(w=>{ if(tWords.has(w)) shareMeaningful=true; });
+    if(sameFirst || shareMeaningful) hits.push(t);
+  });
+  const seen=new Set(); return hits.filter(h=>{const k=h.en.toLowerCase(); if(seen.has(k))return false; seen.add(k); return true;}).slice(0,5);
+}
+function renderHint(el, en){
+  const sim=findSimilar(en);
+  if(!sim.length){ el.hidden=true; el.innerHTML=""; return; }
+  el.hidden=false;
+  el.innerHTML = `<div class="hint-head">💡 비슷한 용어가 이미 있어요 <span class="hint-sub">(그래도 넣을 수 있어요)</span></div>` +
+    sim.map(s=>`<div class="hint-row"><b>${esc(s.en)}</b> <span>${esc(s.ko)}</span> <em>${esc(s.catKo)}${s.mine?" · 내가 추가":""}</em></div>`).join("");
+}
+
+function addTerm(catId,en,ko,d){
+  en=(en||"").trim(); ko=(ko||"").trim(); d=(d||"").trim();
+  if(!en){ return {ok:false,reason:"영어 토큰은 필수예요"}; }
+  // 중복 체크(기본+내 용어 전체에서 같은 en)
+  const dup = MY.some(t=>t.catId===catId && t.en.toLowerCase()===en.toLowerCase())
+    || DATA.find(c=>c.id===catId)?.groups.some(g=>g.items.some(it=>it.en.toLowerCase()===en.toLowerCase()));
+  if(dup){ return {ok:false,reason:`"${en}"는 이미 있어요`}; }
+  MY.push({id:newId(),catId,en,ko:ko||en,d:d||""});
+  saveMy();
+  return {ok:true};
+}
+
+document.getElementById("oneAddBtn").addEventListener("click",()=>{
+  const r=addTerm(addCatSel.value, oneEn.value, oneKo.value, oneD.value);
+  if(r.ok){ oneEn.value=oneKo.value=oneD.value=""; addHint.hidden=true; addHint.innerHTML=""; msg("✓ 추가됐어요 (자동 저장됨)"); rebuild(); renderMyList(); }
+  else msg("⚠ "+r.reason,true);
+});
+
+document.getElementById("bulkAddBtn").addEventListener("click",()=>{
+  const lines=bulkAdd.value.split("\n").map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){ msg("⚠ 넣을 내용이 없어요",true); return; }
+  let ok=0, skip=0;
+  const overlaps=[]; // {en, sims:[...]}
+  lines.forEach(line=>{
+    // 구분자: | 또는 탭 또는 콤마(2개 이상 필드일 때)
+    let parts = line.includes("|") ? line.split("|") : line.split("\t");
+    if(parts.length<2) parts = line.split(/,(.+)/); // 콤마 1개 기준 분리 시도
+    const [en,ko,d] = parts.map(s=>(s||"").trim());
+    // 추가하기 전에 겹침 검사(추가 후엔 방금 넣은 것끼리 잡히므로 먼저)
+    const sims = en ? findSimilar(en) : [];
+    const r=addTerm(addCatSel.value, en, ko, d);
+    if(r.ok){ ok++; if(sims.length) overlaps.push({en, sims}); }
+    else skip++;
+  });
+  bulkAdd.value="";
+  msg(`✓ ${ok}개 추가${skip?`, ${skip}개 건너뜀(중복/빈값)`:""}`);
+  renderBulkHint(overlaps);
+  rebuild(); renderMyList();
+});
+
+function renderBulkHint(overlaps){
+  const el=document.getElementById("bulkHint");
+  if(!overlaps.length){ el.hidden=true; el.innerHTML=""; return; }
+  el.hidden=false;
+  el.innerHTML = `<div class="hint-head">💡 방금 넣은 것 중 비슷한 게 이미 있던 용어 ${overlaps.length}개 <span class="hint-sub">(추가는 됐어요 · 나중에 정리 참고)</span></div>` +
+    overlaps.map(o=>`<div class="hint-row"><b>${esc(o.en)}</b> <em>↔ ${o.sims.map(s=>esc(s.en)).slice(0,2).join(", ")}${o.sims.length>2?" …":""}</em></div>`).join("");
+}
+
+function renderMyList(){
+  myCountEl.textContent=MY.length;
+  if(!MY.length){ myListEl.innerHTML=`<div class="my-empty">아직 추가한 용어가 없어요.<br>왼쪽에서 용어를 추가해보세요.</div>`; return; }
+  const catName={}; DATA.forEach(c=>catName[c.id]=c.ko);
+  myListEl.innerHTML="";
+  // 최근 추가가 위로
+  [...MY].reverse().forEach(t=>{
+    const row=document.createElement("div");
+    row.className="my-item";
+    row.innerHTML=`<span class="cat-tag">${catName[t.catId]||t.catId}</span>
+      <div class="body">
+        <div><span class="en">${esc(t.en)}</span> <span class="ko">${esc(t.ko)}</span></div>
+        ${t.d?`<div class="d">${esc(t.d)}</div>`:""}
+      </div>
+      <div class="acts">
+        <button class="edit">수정</button>
+        <button class="del">삭제</button>
+      </div>`;
+    row.querySelector(".del").addEventListener("click",()=>{
+      if(confirm(`"${t.en}" 삭제할까요?`)){ MY=MY.filter(x=>x.id!==t.id); saveMy(); rebuild(); renderMyList(); }
+    });
+    row.querySelector(".edit").addEventListener("click",()=>openEdit(t));
+    myListEl.appendChild(row);
+  });
+}
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderManage(){ fillCatSelect(); renderMyList(); }
+
+/* ===== 수정 모달 ===== */
+const editModal=document.getElementById("editModal");
+const edCat=document.getElementById("edCat"), edEn=document.getElementById("edEn"),
+      edKo=document.getElementById("edKo"), edD=document.getElementById("edD");
+const edHint=document.getElementById("edHint");
+let editingId=null;
+function renderEditHint(){
+  const cur=edEn.value.trim().toLowerCase();
+  const sim=findSimilar(edEn.value).filter(s=>!(s.mine && s.en.toLowerCase()===cur && MY.find(x=>x.id===editingId)?.en.toLowerCase()===cur));
+  if(!sim.length){ edHint.hidden=true; edHint.innerHTML=""; return; }
+  edHint.hidden=false;
+  edHint.innerHTML = `<div class="hint-head">💡 비슷한 용어가 이미 있어요 <span class="hint-sub">(그래도 저장돼요)</span></div>` +
+    sim.map(s=>`<div class="hint-row"><b>${esc(s.en)}</b> <span>${esc(s.ko)}</span> <em>${esc(s.catKo)}${s.mine?" · 내가 추가":""}</em></div>`).join("");
+}
+edEn.addEventListener("input",renderEditHint);
+function openEdit(t){
+  editingId=t.id;
+  edCat.innerHTML = DATA.map(c=>`<option value="${c.id}">${c.num}. ${c.title} · ${c.ko}</option>`).join("");
+  edCat.value=t.catId; edEn.value=t.en; edKo.value=t.ko; edD.value=t.d||"";
+  renderEditHint();
+  editModal.hidden=false;
+}
+function closeEdit(){ editModal.hidden=true; editingId=null; }
+document.getElementById("edCancel").addEventListener("click",closeEdit);
+editModal.addEventListener("click",e=>{ if(e.target===editModal) closeEdit(); });
+document.getElementById("edSave").addEventListener("click",()=>{
+  const t=MY.find(x=>x.id===editingId); if(!t){ closeEdit(); return; }
+  const en=edEn.value.trim();
+  if(!en){ alert("영어 토큰은 필수예요"); return; }
+  // 다른 용어와 같은 카테고리에서 en 중복인지 체크(자기 자신 제외)
+  const newCat=edCat.value;
+  const dup = MY.some(x=>x.id!==t.id && x.catId===newCat && x.en.toLowerCase()===en.toLowerCase())
+    || DATA.find(c=>c.id===newCat)?.groups.some(g=>g.items.some(it=>it.en.toLowerCase()===en.toLowerCase()));
+  if(dup){ alert(`"${en}"는 그 카테고리에 이미 있어요`); return; }
+  Object.assign(t,{catId:newCat, en, ko:edKo.value.trim()||en, d:edD.value.trim()});
+  saveMy(); rebuild(); renderMyList(); closeEdit();
+});
+
+/* ===== 내보내기 / 불러오기 / 초기화 ===== */
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify({app:"prompt-studio",version:1,terms:MY},null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const stamp=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`내용어장_${stamp}.json`; a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      const incoming = Array.isArray(data)? data : (data.terms||[]);
+      if(!Array.isArray(incoming)) throw 0;
+      let added=0;
+      incoming.forEach(t=>{
+        if(!t||!t.en||!t.catId) return;
+        const dup=MY.some(x=>x.catId===t.catId && x.en.toLowerCase()===String(t.en).toLowerCase());
+        if(!dup){ MY.push({id:newId(),catId:t.catId,en:String(t.en),ko:String(t.ko||t.en),d:String(t.d||"")}); added++; }
+      });
+      saveMy(); rebuild(); renderMyList();
+      msg(`✓ ${added}개 불러왔어요`);
+    }catch{ msg("⚠ 파일을 읽을 수 없어요 (형식 확인)",true); }
+    e.target.value="";
+  };
+  r.readAsText(f);
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(!MY.length){ msg("초기화할 내 용어가 없어요"); return; }
+  if(confirm(`내가 추가한 용어 ${MY.length}개를 모두 지울까요?\n(기본 내장 용어는 그대로예요. 되돌릴 수 없어요.)`)){
+    MY=[]; saveMy(); rebuild(); renderMyList(); msg("✓ 초기화됐어요");
+  }
+});
+
+/* ============================================================
+   init
+   ============================================================ */
+loadMy();
+VIEWDATA = mergedData();
+renderCats();
+render();
+</script>
+</body>
+</html>

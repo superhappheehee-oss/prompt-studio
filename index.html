@@ -323,7 +323,61 @@
     .mng-intro{gap:12px}
     .mng-io{width:100%}
     .mng-io .btn.sm{flex:1}
+
+    /* 하단 바가 콘텐츠 마지막을 가리지 않도록 아래 여백 확보 */
+    body.has-dock .wrap{padding-bottom:96px}
+    /* 폰에서 하단 바 노출 */
+    .dock{display:flex}
   }
+
+  /* ============================================================
+     하단 sticky 바 — 기본은 숨김, 폰(위 media)에서만 display:flex 됨
+     선택한 용어를 화면 아래 고정으로 실시간 표시 · 탭하면 완성 패널로 이동
+     ============================================================ */
+  .dock{
+    position:fixed;left:0;right:0;bottom:0;z-index:90;
+    display:none;                 /* 데스크톱: 항상 숨김 */
+    gap:8px;padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));
+    background:var(--ink);border-top:2px solid var(--ink);
+    box-shadow:0 -6px 20px rgba(28,28,34,.22);
+    transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  }
+  .dock.show{transform:translateY(0)}
+  .dock-main{
+    flex:1;min-width:0;display:flex;align-items:center;gap:9px;
+    border:0;background:transparent;color:#fff;cursor:pointer;
+    padding:6px 4px;font-family:inherit;text-align:left;
+  }
+  .dock-count{
+    flex:none;font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:13px;
+    background:var(--c1);color:var(--ink);border-radius:9px;padding:5px 10px;min-width:30px;text-align:center;
+  }
+  .dock-chips{
+    flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0;
+  }
+  .dock-chips::-webkit-scrollbar{display:none}
+  .dock-chips .dc{
+    flex:none;font-size:12px;font-weight:600;font-family:"Gothic A1",sans-serif;
+    color:var(--ink);border-radius:8px;padding:5px 9px;white-space:nowrap;background:#e4e4e2;
+    animation:dcpop .32s cubic-bezier(.2,1.2,.3,1);
+  }
+  /* pill과 같은 카테고리 색 물들임 */
+  .dock-chips .dc[data-cc="medium"]{background:var(--c1)} .dock-chips .dc[data-cc="west"]{background:var(--c2)}
+  .dock-chips .dc[data-cc="east"]{background:var(--c3)} .dock-chips .dc[data-cc="illus"]{background:var(--c4)}
+  .dock-chips .dc[data-cc="light"]{background:var(--c5)} .dock-chips .dc[data-cc="cam"]{background:var(--c6)}
+  .dock-chips .dc[data-cc="mood"]{background:var(--c7)} .dock-chips .dc[data-cc="misc"]{background:var(--c8)}
+  .dock-chips .dc.subj{background:#fff;border:1.5px dashed #8a8ca0}
+  @keyframes dcpop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  .dock-go{flex:none;color:var(--c1);font-size:12px;font-weight:700}
+  .dock-copy{
+    flex:none;border:2px solid var(--c1);background:var(--c1);color:var(--ink);
+    border-radius:10px;font-size:18px;line-height:1;padding:0 14px;cursor:pointer;font-weight:700;
+  }
+  .dock-copy:active{transform:scale(.94)}
+  /* 방금 담겼다는 '툭' 신호 — 바 전체가 살짝 튐 */
+  .dock.pulse{animation:dockpulse .34s ease}
+  @keyframes dockpulse{0%{}30%{transform:translateY(-4px)}100%{transform:translateY(0)}}
 </style>
 </head>
 <body data-mode="image">
@@ -468,6 +522,16 @@ airbrush illustration | 에어브러시 | 매끈하게 뭉갠 채색"></textarea
     PROMPT STUDIO · 조명 / 카메라 / 서양 미술사조 / 한국·동양 미술 / 현대 일러스트 수록<br>
     ◉ 표시 그룹은 <b>하나만</b> 선택(스타일 충돌 방지) · 나머지는 여러 개 겹쳐 사용 가능
   </footer>
+</div>
+
+<!-- ===== 📱 모바일 전용 하단 sticky 바 (선택한 용어 실시간 확인) ===== -->
+<div id="dock" class="dock" hidden aria-hidden="true">
+  <button class="dock-main" id="dockMain" type="button" aria-label="선택한 용어 보기">
+    <span class="dock-count" id="dockCount">0</span>
+    <span class="dock-chips" id="dockChips"></span>
+    <span class="dock-go" aria-hidden="true">▲</span>
+  </button>
+  <button class="dock-copy" id="dockCopy" type="button" aria-label="프롬프트 복사">⧉</button>
 </div>
 
 <script>
@@ -961,8 +1025,50 @@ function render(){
     });
     selList.appendChild(p);
   });
+  updateDock(toks);
 }
 function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* ===== 모바일 하단 바 갱신 ===== */
+const dock=document.getElementById("dock");
+const dockCount=document.getElementById("dockCount");
+const dockChips=document.getElementById("dockChips");
+let dockPrevCount=0;
+function updateDock(toks){
+  if(!dock) return;
+  const n=toks.length;
+  dockCount.textContent=n;
+  // 알약들(고른 순서대로, 최근 것이 오른쪽 끝)
+  dockChips.innerHTML = toks.map(t=>`<span class="dc" data-cc="${t.catId||''}">${escapeHtml(t.ko)}</span>`).join("");
+  if(n>0){
+    dock.hidden=false; dock.setAttribute("aria-hidden","false");
+    document.body.classList.add("has-dock");
+    requestAnimationFrame(()=>dock.classList.add("show"));
+    // 새로 담겼을 때: 오른쪽 끝으로 스크롤 + '툭' 신호
+    if(n>dockPrevCount){
+      dockChips.scrollLeft=dockChips.scrollWidth;
+      dock.classList.remove("pulse"); void dock.offsetWidth; dock.classList.add("pulse");
+    }
+  } else {
+    dock.classList.remove("show");
+    document.body.classList.remove("has-dock");
+    // 트랜지션 후 완전히 감춤
+    setTimeout(()=>{ if(!state.selected.size){ dock.hidden=true; dock.setAttribute("aria-hidden","true"); } }, 300);
+  }
+  dockPrevCount=n;
+}
+// 바 본체 탭 → 완성 프롬프트 패널로 스르륵 이동
+document.getElementById("dockMain").addEventListener("click",()=>{
+  const panel=document.querySelector(".panel");
+  if(panel) panel.scrollIntoView({behavior:"smooth",block:"start"});
+});
+// 바의 복사 버튼 → 프롬프트 복사(기존 로직 재사용)
+document.getElementById("dockCopy").addEventListener("click",async()=>{
+  const txt=plainPrompt();
+  if(!txt){ flash("먼저 주제나 용어를 골라주세요"); return; }
+  try{ await navigator.clipboard.writeText(txt); flash("✓ 복사되었습니다"); }
+  catch{ fallbackCopy(txt); flash("✓ 복사됨"); }
+});
 
 function plainPrompt(){
   const subject=effectiveSubject();

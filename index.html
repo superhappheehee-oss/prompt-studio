@@ -326,8 +326,8 @@
 
     /* 하단 바가 콘텐츠 마지막을 가리지 않도록 아래 여백 확보 */
     body.has-dock .wrap{padding-bottom:96px}
-    /* 폰에서 하단 바 노출 */
-    .dock{display:flex}
+    /* 폰에서 하단 바 노출 (아래 일반 .dock 규칙보다 우선하도록 명시) */
+    .dock{display:flex !important}
   }
 
   /* ============================================================
@@ -342,6 +342,7 @@
     box-shadow:0 -6px 20px rgba(28,28,34,.22);
     transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
   }
+  .dock[hidden]{display:none !important}   /* 선택 0개: 폰에서도 확실히 숨김 */
   .dock.show{transform:translateY(0)}
   .dock-main{
     flex:1;min-width:0;display:flex;align-items:center;gap:9px;

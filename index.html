@@ -3,7 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prompt Studio · 미술 용어 프롬프트 빌더</title>
+<title>Prompt Studio · 미술 용어 프롬프트 빌더 (이미지·영상 AI 프롬프트 생성기)</title>
+<meta name="description" content="미술 지식이 없어도 버튼만 고르면 이미지·영상 생성 AI용 영어 프롬프트가 완성됩니다. 미술 사조·조명·카메라·일러스트 용어를 한글 뜻과 함께 골라 쓰는 무료 프롬프트 빌더.">
+<meta name="keywords" content="AI 프롬프트, 프롬프트 생성기, 이미지 생성 프롬프트, 미드저니 프롬프트, 파이어플라이 프롬프트, 미술 용어, 영어 프롬프트, prompt builder">
+<meta name="author" content="Prompt Studio">
+<link rel="canonical" href="https://superhappheehee-oss.github.io/prompt-studio/">
+<meta name="robots" content="index, follow">
+<!-- 카톡·트위터·페북 공유 시 미리보기 (Open Graph) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Prompt Studio · 미술 용어 프롬프트 빌더">
+<meta property="og:description" content="버튼만 고르면 이미지·영상 AI용 영어 프롬프트가 완성. 미술 용어를 한글 뜻과 함께 배우며 쓰는 무료 도구.">
+<meta property="og:url" content="https://superhappheehee-oss.github.io/prompt-studio/">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Prompt Studio · 미술 용어 프롬프트 빌더">
+<meta name="twitter:description" content="버튼만 고르면 이미지·영상 AI용 영어 프롬프트가 완성되는 무료 도구.">
+<!-- 파비콘 (이모지 SVG, 별도 파일 불필요) -->
+<link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;🎨&lt;/text&gt;&lt;/svg&gt;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Gothic+A1:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -262,6 +278,52 @@
   footer b{color:var(--text-dim)}
   .video-only{display:none}
   body[data-mode="video"] .video-only{display:block}
+
+  /* ============================================================
+     📱 모바일(폰) 대응 — 폰에서 깨지던 것들 정리
+     · 상단 잘림 / 좌우 삐짐(가로 스크롤) / 과한 여백·글자 크기
+     기존 데스크톱 레이아웃은 그대로, 좁은 화면에서만 적용됨
+     ============================================================ */
+  html,body{overflow-x:hidden}          /* 좌우로 밀리는 가로 스크롤 원천 차단 */
+
+  @media(max-width:640px){
+    .wrap{padding:22px 16px 80px}       /* 바깥 여백 축소(40→16) → 삐짐 해소 */
+
+    /* 헤더: 제목·설명을 세로로 쌓고 왼쪽 정렬 */
+    header.masthead{flex-direction:column;align-items:flex-start;gap:12px}
+    .brand h1{font-size:clamp(34px,12vw,46px)}   /* 제목 크기 화면에 맞춤 */
+    .tagline{text-align:left;font-size:14px;max-width:100%}
+
+    /* 컨트롤 줄: 세로로 쌓아 버튼이 화면 밖으로 안 나가게 */
+    .controls-row{gap:10px;margin:20px 0 4px;padding:14px 0}
+    .seg,.tabs{width:100%}
+    .seg{justify-content:center}
+    .seg button{flex:1;padding:10px 8px;font-size:13.5px}
+    .tabs{margin-left:0 !important}      /* 데스크톱의 오른쪽 밀기 해제 */
+
+    /* 검색줄: 입력창과 '전체 해제'를 세로로 → 버튼 잘림 해결 */
+    .searchbar{flex-direction:column;align-items:stretch;gap:8px;margin:18px 0 4px}
+    .searchbar input{width:100%;font-size:15px;padding:13px 16px}
+    .clearall{width:100%;padding:12px}
+
+    /* 카테고리 카드: 안쪽 여백·폰트 살짝 축소 */
+    .cat > summary{padding:15px 16px;gap:10px}
+    .cat-title{font-size:19px}
+    .cat-title .ko{display:block;margin-left:0;margin-top:2px}  /* 한글 부제 줄바꿈 */
+    .cat-body{padding:2px 15px 18px}
+    .chip{max-width:100%}                /* 칩이 카드 밖으로 안 나가게 */
+
+    /* 우측 패널: 폰에선 위에 고정 안 하고 자연스레 흐르게 */
+    .panel{position:static}
+    .layout{gap:22px;margin-top:22px}
+
+    /* 관리 화면 여백 정리 */
+    .mng-form,.mng-list{padding:16px}
+    .mng-onerow{grid-template-columns:1fr}   /* 영어/한글 입력칸 세로로 */
+    .mng-intro{gap:12px}
+    .mng-io{width:100%}
+    .mng-io .btn.sm{flex:1}
+  }
 </style>
 </head>
 <body data-mode="image">
@@ -794,7 +856,7 @@ const trStatus=document.getElementById("trStatus");
    무료(비공식) Google 번역 엔드포인트 사용. 실패 시 원문 유지 + 안내.
    tr = { src, en, state:"idle|loading|ok|err" }  */
 const tr = { src:"", en:"", state:"idle" };
-function hasKorean(s){ return /[\u3131-\uD79D]/.test(s); }
+function hasKorean(s){ return /[ㄱ-힝]/.test(s); }
 
 /* 번역된 주제(있으면 그걸, 없으면 원문) — 프롬프트에 실제 들어가는 값 */
 function effectiveSubject(){
